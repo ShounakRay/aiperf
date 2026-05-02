@@ -388,6 +388,24 @@ class CLIConfig(BaseConfig):
         ),
     ] = None
 
+    uuid_and_strip: Annotated[
+        bool,
+        Field(
+            description=(
+                "Drive vLLM's UUID-keyed multimodal cache (`--mm-processor-cache-gb`). "
+                "Repeated images within a session are detected at load time and fired "
+                "with an empty `image_url.url` plus their UUID so vLLM serves the "
+                "cached embedding instead of re-decoding. Only applies to chat "
+                "endpoints; size `--mm-processor-cache-gb` to cover the working set "
+                "or vLLM returns 400 on a UUID miss."
+            ),
+        ),
+        CLIParameter(
+            name=("--uuid-and-strip",),
+            group=Groups.ENDPOINT,
+        ),
+    ] = EndpointDefaults.UUID_AND_STRIP
+
     @property
     def url(self) -> str:
         """Return the first URL for backward compatibility."""

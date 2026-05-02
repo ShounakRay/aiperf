@@ -149,6 +149,11 @@ class EndpointInfo(AIPerfBaseModel):
         description="Custom template configuration for template endpoints. "
         "Provides the Jinja2 request body and JMESPath response_field used by TemplateEndpoint.",
     )
+    uuid_and_strip: bool = Field(
+        default=EndpointDefaults.UUID_AND_STRIP,
+        description="Drive vLLM's UUID-keyed multimodal cache (vLLM extension). "
+        "See `--uuid-and-strip`.",
+    )
 
     @property
     def base_url(self) -> str:
@@ -213,6 +218,7 @@ class ModelEndpointInfo(AIPerfBaseModel):
                 collect_trace_chunks=False,
                 template=getattr(ep, "template", None),
                 session_header=getattr(ep, "session_header", None),
+                uuid_and_strip=getattr(ep, "uuid_and_strip", EndpointDefaults.UUID_AND_STRIP),
             ),
             transport=ep.transport,
         )

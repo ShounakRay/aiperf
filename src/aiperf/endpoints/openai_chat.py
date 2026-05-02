@@ -25,9 +25,11 @@ class ChatEndpoint(BaseEndpoint):
 
     Supports multi-modal inputs (text, images, audio, video) and both
     streaming and non-streaming responses. Message-array construction
-    uses the generic ``BaseEndpoint.build_messages`` flow - the default
-    ``_render_*_part`` hooks already emit OpenAI chat shape, so nothing
-    needs overriding here.
+    uses the generic ``BaseEndpoint.build_messages`` flow by default.
+    When ``--uuid-and-strip`` is enabled, dedup is applied at dataset
+    load time (see ``SingleTurnDatasetLoader._dedup_repeated_images_inplace``)
+    and the endpoint uses ``_create_messages`` to thread UUID info into
+    wire format.
     """
 
     def format_payload(self, request_info: RequestInfo) -> dict[str, Any]:
@@ -38,7 +40,15 @@ class ChatEndpoint(BaseEndpoint):
         turns = request_info.turns
         model_endpoint = request_info.model_endpoint
 
-        messages = self._format_messages(request_info, self.build_messages(turns))
+        if model_endpoint.endpoint.uuid_and_strip:
+            messages = self._create_messages(
+                turns,
+                request_info.system_message,
+                request_info.user_context_message,
+                uuid_and_strip=True,
+            )
+        else:
+            messages = self._format_messages(request_info, self.build_messages(turns))
 
         # Conversation-level fields walk from the end and pick the most recent
         # non-None value. Per-request overrides stay scoped to the dispatching
@@ -125,6 +135,135 @@ class ChatEndpoint(BaseEndpoint):
         else:
             first["content"] = f"{system_message}\n{content}"
         return [first, *rendered[1:]]
+
+    def _create_messages(
+        self,
+        turns: list[Turn],
+        system_message: str | None,
+        user_context_message: str | None,
+        *,
+        uuid_and_strip: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Create messages from turns with UUID-aware image rendering.
+
+        Used when ``uuid_and_strip=True``; the default path uses
+        ``_format_messages`` + ``build_messages`` instead.
+        """
+        messages: list[dict[str, Any]] = []
+
+        if system_message:
+            messages.append({"role": "system", "content": system_message})
+
+        if user_context_message:
+            messages.append({"role": "user", "content": user_context_message})
+
+        for turn in turns:
+            if turn.raw_messages:
+                messages.extend(turn.raw_messages)
+                continue
+            message: dict[str, Any] = {"role": turn.role or self.DEFAULT_TURN_ROLE}
+            self._set_message_content(message, turn, uuid_and_strip=uuid_and_strip)
+            messages.append(message)
+        return messages
+
+    def _set_message_content(
+        self,
+        message: dict[str, Any],
+        turn: Turn,
+        *,
+        uuid_and_strip: bool,
+    ) -> None:
+        """Populate ``message["content"]`` from a turn.
+
+        Single-text turns return the raw string (Dynamo API hotfix — some
+        servers reject list-of-parts when only one text is present).
+        Multi-modal turns return a list of content parts; image parts are
+        rendered via ``_append_image_parts`` which handles UUID injection.
+        """
+        if (
+            len(turn.texts) == 1
+            and len(turn.texts[0].contents) == 1
+            and len(turn.images) == 0
+            and len(turn.audios) == 0
+            and len(turn.videos) == 0
+        ):
+            message["content"] = (
+                turn.texts[0].contents[0] if turn.texts[0].contents else ""
+            )
+            return
+
+        message_content: list[dict[str, Any]] = []
+
+        for text in turn.texts:
+            for content in text.contents:
+                if not content:
+                    continue
+                message_content.append({"type": "text", "text": content})
+
+        self._append_image_parts(message_content, turn, uuid_and_strip=uuid_and_strip)
+
+        for audio in turn.audios:
+            for content in audio.contents:
+                if not content:
+                    continue
+                if "," not in content:
+                    raise ValueError(
+                        "Audio content must be in the format 'format,b64_audio'."
+                    )
+                fmt, b64_audio = content.split(",", 1)
+                message_content.append(
+                    {
+                        "type": "input_audio",
+                        "input_audio": {
+                            "data": b64_audio,
+                            "format": fmt,
+                        },
+                    }
+                )
+        for video in turn.videos:
+            for content in video.contents:
+                if not content:
+                    continue
+                message_content.append(
+                    {"type": "video_url", "video_url": {"url": content}}
+                )
+
+        message["content"] = message_content
+
+    def _append_image_parts(
+        self,
+        message_content: list[dict[str, Any]],
+        turn: Turn,
+        *,
+        uuid_and_strip: bool,
+    ) -> None:
+        """Append image content parts.
+
+        Default path (uuid_and_strip off, or image has no UUIDs):
+        emit ``{"image_url": {"url": content}}`` and skip empty content.
+
+        With uuid_and_strip on AND the image carries UUIDs: emit
+        ``{"image_url": {"url": content}, "uuid": u}``. Non-empty content
+        ships bytes (first occurrence post-dedup); empty content signals
+        cache-served (load-time dedup stripped a repeat).
+        """
+        for image in turn.images:
+            if uuid_and_strip and image.uuids:
+                for content, uuid in zip(image.contents, image.uuids, strict=True):
+                    message_content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": content},
+                            "uuid": uuid,
+                        }
+                    )
+            else:
+                for content in image.contents:
+                    if not content:
+                        continue
+                    message_content.append(
+                        {"type": "image_url", "image_url": {"url": content}}
+                    )
 
     @staticmethod
     def _ensure_include_usage(payload: dict[str, Any]) -> None:

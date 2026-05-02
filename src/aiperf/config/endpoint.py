@@ -64,6 +64,7 @@ class EndpointDefaults:
     WAIT_FOR_MODEL_TIMEOUT = 0.0
     WAIT_FOR_MODEL_INTERVAL = 5.0
     WAIT_FOR_MODEL_MODE = "inference"
+    UUID_AND_STRIP = False
 
 
 class TemplateConfig(BaseConfig):
@@ -313,6 +314,21 @@ class EndpointConfig(BaseConfig):
                 "When set, replaces the default `X-Correlation-ID` header. Useful "
                 "when the inference server expects a custom session-affinity header "
                 "(e.g. `--session-header X-Session-ID`)."
+            ),
+        ),
+    ]
+
+    uuid_and_strip: Annotated[
+        bool,
+        Field(
+            default=EndpointDefaults.UUID_AND_STRIP,
+            description=(
+                "Drive vLLM's UUID-keyed multimodal cache (`--mm-processor-cache-gb`). "
+                "When enabled, aiperf detects repeated images within a session at load "
+                "time and fires them with an empty `image_url.url` plus their UUID so "
+                "vLLM serves the cached embedding. Only applies to chat endpoints; "
+                "size `--mm-processor-cache-gb` to cover the working set or vLLM "
+                "returns 400 on a UUID miss."
             ),
         ),
     ]

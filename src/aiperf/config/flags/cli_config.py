@@ -395,9 +395,12 @@ class CLIConfig(BaseConfig):
                 "Drive vLLM's UUID-keyed multimodal cache (`--mm-processor-cache-gb`). "
                 "Repeated images within a session are detected at load time and fired "
                 "with an empty `image_url.url` plus their UUID so vLLM serves the "
-                "cached embedding instead of re-decoding. Only applies to chat "
-                "endpoints; size `--mm-processor-cache-gb` to cover the working set "
-                "or vLLM returns 400 on a UUID miss."
+                "cached embedding instead of re-decoding. Only applies to "
+                "`--endpoint-type chat` and `--custom-dataset-type single_turn` "
+                "(with `session_id`-grouped rows); using it with `multi_turn` raises "
+                "`NotImplementedError`, and on non-chat endpoints the flag is silently "
+                "ignored. Size `--mm-processor-cache-gb` to cover the working set or "
+                "vLLM returns 400 on a UUID miss."
             ),
         ),
         CLIParameter(

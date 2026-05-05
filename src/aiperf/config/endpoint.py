@@ -326,9 +326,11 @@ class EndpointConfig(BaseConfig):
                 "Drive vLLM's UUID-keyed multimodal cache (`--mm-processor-cache-gb`). "
                 "When enabled, aiperf detects repeated images within a session at load "
                 "time and fires them with an empty `image_url.url` plus their UUID so "
-                "vLLM serves the cached embedding. Only applies to chat endpoints; "
-                "size `--mm-processor-cache-gb` to cover the working set or vLLM "
-                "returns 400 on a UUID miss."
+                "vLLM serves the cached embedding. Only applies to `--endpoint-type chat` "
+                "and `--custom-dataset-type single_turn` (with `session_id`-grouped rows); "
+                "using it with `multi_turn` raises `NotImplementedError`, and on non-chat "
+                "endpoints the flag is silently ignored. Size `--mm-processor-cache-gb` to "
+                "cover the working set or vLLM returns 400 on a UUID miss."
             ),
         ),
     ]

@@ -193,7 +193,7 @@ class TestMetricsJsonExporter:
 
         # Schema bump landed
         assert raw["schema_version"] == JsonExportData.SCHEMA_VERSION
-        assert JsonExportData.SCHEMA_VERSION == "1.3"
+        assert JsonExportData.SCHEMA_VERSION == "1.4"
 
         # Record metric: count and sum are present
         assert raw["request_latency"]["count"] == 100
@@ -247,7 +247,7 @@ class TestMetricsJsonExporter:
             expected_file = output_dir / OutputDefaults.PROFILE_EXPORT_AIPERF_JSON_FILE
             data = JsonExportData.model_validate_json(expected_file.read_text())
 
-            assert data.schema_version == "1.3"
+            assert data.schema_version == "1.4"
             assert data.run_info is not None
             assert data.run_info.benchmark_id == "abc123"
             assert data.run_info.sweep_id == "sweep-uuid-xyz"
@@ -520,6 +520,7 @@ class TestMetricsJsonExporterTelemetry:
             assert "gpu_index" in first_gpu
             assert "gpu_name" in first_gpu
             assert "gpu_uuid" in first_gpu
+            assert first_gpu["platform"] == "nvidia"
 
             # Verify metrics structure
             assert "metrics" in first_gpu
@@ -630,7 +631,7 @@ class TestMetricsJsonExporterTelemetry:
                                 hostname="test-host",
                                 metrics={
                                     # Metric with None values for percentiles
-                                    "gpu_power_usage": JsonMetricResult(
+                                    "nvidia_power_usage": JsonMetricResult(
                                         unit="W",
                                         avg=100.0,
                                         min=None,
@@ -743,7 +744,7 @@ class TestMetricsJsonExporterTelemetry:
                                 gpu_uuid="GPU-123",
                                 hostname="node1",
                                 metrics={
-                                    "gpu_power_usage": JsonMetricResult(
+                                    "nvidia_power_usage": JsonMetricResult(
                                         unit="W",
                                         avg=100.0,
                                         min=100.0,
@@ -814,7 +815,7 @@ class TestMetricsJsonExporterTelemetry:
                                 gpu_uuid="GPU-111",
                                 hostname="node1",
                                 metrics={
-                                    "gpu_power_usage": JsonMetricResult(
+                                    "nvidia_power_usage": JsonMetricResult(
                                         unit="W",
                                         avg=105.0,
                                         min=100.0,
@@ -833,7 +834,7 @@ class TestMetricsJsonExporterTelemetry:
                                 gpu_uuid="GPU-222",
                                 hostname="node2",
                                 metrics={
-                                    "gpu_power_usage": JsonMetricResult(
+                                    "nvidia_power_usage": JsonMetricResult(
                                         unit="W",
                                         avg=205.0,
                                         min=200.0,
@@ -902,7 +903,7 @@ class TestMetricsJsonExporterTelemetry:
                                 gpu_uuid="GPU-123",
                                 hostname="test-hostname",
                                 metrics={
-                                    "gpu_power_usage": JsonMetricResult(
+                                    "nvidia_power_usage": JsonMetricResult(
                                         unit="W",
                                         avg=100.0,
                                         min=100.0,

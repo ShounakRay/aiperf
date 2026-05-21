@@ -83,17 +83,18 @@ def sample_telemetry_record():
         gpu_index=0,
         gpu_model_name="NVIDIA H100",
         gpu_uuid="GPU-12345678-1234-1234-1234-123456789abc",
+        platform="nvidia",
         pci_bus_id="00000000:01:00.0",
         device="nvidia0",
         hostname="test-node-01",
         telemetry_data=TelemetryMetrics(
-            gpu_power_usage=300.0,
-            energy_consumption=1000.5,
-            gpu_utilization=85.0,
-            gpu_memory_used=72.5,
-            gpu_temperature=70.0,
-            xid_errors=0.0,
-            power_violation=0.0,
+            nvidia_power_usage=300.0,
+            nvidia_energy_consumption=1000.5,
+            nvidia_gpu_utilization=85.0,
+            nvidia_memory_used=72.5,
+            nvidia_temperature=70.0,
+            nvidia_xid_errors=0.0,
+            nvidia_power_violation=0.0,
         ),
     )
 
@@ -105,7 +106,7 @@ def sample_telemetry_results():
     # Create JsonMetricResults for each GPU metric
     def make_gpu_metrics(base_power, base_energy, base_util, base_mem, base_temp):
         return {
-            "gpu_power_usage": JsonMetricResult(
+            "nvidia_power_usage": JsonMetricResult(
                 unit="W",
                 avg=base_power,
                 min=base_power - 20,
@@ -115,7 +116,7 @@ def sample_telemetry_results():
                 p99=base_power + 18,
                 std=5.0,
             ),
-            "energy_consumption": JsonMetricResult(
+            "nvidia_energy_consumption": JsonMetricResult(
                 unit="J",
                 avg=base_energy,
                 min=base_energy - 100,
@@ -125,7 +126,7 @@ def sample_telemetry_results():
                 p99=base_energy + 380,
                 std=100.0,
             ),
-            "gpu_utilization": JsonMetricResult(
+            "nvidia_gpu_utilization": JsonMetricResult(
                 unit="%",
                 avg=base_util,
                 min=base_util,
@@ -135,7 +136,7 @@ def sample_telemetry_results():
                 p99=base_util + 8,
                 std=2.0,
             ),
-            "gpu_memory_used": JsonMetricResult(
+            "nvidia_memory_used": JsonMetricResult(
                 unit="GB",
                 avg=base_mem,
                 min=base_mem,
@@ -145,7 +146,7 @@ def sample_telemetry_results():
                 p99=base_mem + 4,
                 std=1.0,
             ),
-            "gpu_temperature": JsonMetricResult(
+            "nvidia_temperature": JsonMetricResult(
                 unit="°C",
                 avg=base_temp,
                 min=base_temp,
@@ -155,7 +156,7 @@ def sample_telemetry_results():
                 p99=base_temp + 7,
                 std=2.0,
             ),
-            "xid_errors": JsonMetricResult(
+            "nvidia_xid_errors": JsonMetricResult(
                 unit="count",
                 avg=0.0,
                 min=0.0,
@@ -165,7 +166,7 @@ def sample_telemetry_results():
                 p99=0.0,
                 std=0.0,
             ),
-            "power_violation": JsonMetricResult(
+            "nvidia_power_violation": JsonMetricResult(
                 unit="ms",
                 avg=120.0,
                 min=100.0,
@@ -197,6 +198,7 @@ def sample_telemetry_results():
                         gpu_index=0,
                         gpu_name="NVIDIA H100",
                         gpu_uuid="GPU-12345678-1234-1234-1234-123456780000",
+                        platform="nvidia",
                         hostname="test-node-01",
                         metrics=make_gpu_metrics(290.0, 1200.0, 84.0, 72.0, 69.0),
                     ),
@@ -204,6 +206,7 @@ def sample_telemetry_results():
                         gpu_index=1,
                         gpu_name="NVIDIA H100",
                         gpu_uuid="GPU-12345678-1234-1234-1234-123456780001",
+                        platform="nvidia",
                         hostname="test-node-01",
                         metrics=make_gpu_metrics(310.0, 1200.0, 84.0, 77.0, 69.0),
                     ),
@@ -215,6 +218,7 @@ def sample_telemetry_results():
                         gpu_index=0,
                         gpu_name="NVIDIA A100",
                         gpu_uuid="GPU-abcdef01-2345-6789-abcd-ef0123456789",
+                        platform="nvidia",
                         hostname="test-node-02",
                         metrics=make_gpu_metrics(270.0, 1120.0, 81.0, 64.0, 69.0),
                     ),
@@ -245,18 +249,19 @@ def sample_telemetry_results_with_failures():
                         gpu_index=0,
                         gpu_name="NVIDIA H100",
                         gpu_uuid="GPU-12345678-1234-1234-1234-123456789abc",
+                        platform="nvidia",
                         hostname="test-node-01",
                         metrics={
-                            "gpu_power_usage": JsonMetricResult(
+                            "nvidia_power_usage": JsonMetricResult(
                                 unit="W", avg=310.0, min=300.0, max=320.0, std=10.0
                             ),
-                            "gpu_utilization": JsonMetricResult(
+                            "nvidia_gpu_utilization": JsonMetricResult(
                                 unit="%", avg=85.0, min=85.0, max=85.0, std=0.0
                             ),
-                            "gpu_memory_used": JsonMetricResult(
+                            "nvidia_memory_used": JsonMetricResult(
                                 unit="GB", avg=72.5, min=72.5, max=72.5, std=0.0
                             ),
-                            "gpu_temperature": JsonMetricResult(
+                            "nvidia_temperature": JsonMetricResult(
                                 unit="°C", avg=70.0, min=70.0, max=70.0, std=0.0
                             ),
                         },

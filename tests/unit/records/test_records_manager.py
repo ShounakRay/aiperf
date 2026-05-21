@@ -95,7 +95,7 @@ class TestRecordsManagerTelemetry:
                 gpu_uuid="GPU-123",
                 gpu_model_name="Test GPU",
                 telemetry_data=TelemetryMetrics(
-                    gpu_power_usage=100.0,
+                    nvidia_power_usage=100.0,
                 ),
             )
         ]
@@ -212,7 +212,7 @@ class TestRecordsManagerTelemetry:
             gpu_uuid="GPU-123",
             gpu_model_name="Test GPU",
             telemetry_data=TelemetryMetrics(
-                gpu_power_usage=100.0,
+                nvidia_power_usage=100.0,
             ),
         )
 

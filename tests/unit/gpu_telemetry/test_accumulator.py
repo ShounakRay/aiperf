@@ -20,6 +20,10 @@ from aiperf.config.flags.cli_config import CLIConfig
 from aiperf.gpu_telemetry.accumulator import (
     GPUTelemetryAccumulator,
 )
+from aiperf.gpu_telemetry.constants import (
+    NVIDIA_ENERGY_CONSUMPTION_FIELD,
+    NVIDIA_POWER_USAGE_FIELD,
+)
 from aiperf.plugin.enums import EndpointType
 from tests.unit.post_processors.conftest import make_telemetry_record
 
@@ -426,13 +430,13 @@ class TestComputeEfficiencyMetrics:
             time_filter: TimeRangeFilter | None = None,
             is_counter: bool = False,
         ) -> MetricResult:
-            if metric_name == "gpu_power_usage":
+            if metric_name == NVIDIA_POWER_USAGE_FIELD:
                 if power_avg is None:
                     raise NoMetricValue("No power data")
                 return MetricResult(
                     tag=tag, header=header, unit=unit, avg=power_avg, count=3
                 )
-            if metric_name == "energy_consumption":
+            if metric_name == NVIDIA_ENERGY_CONSUMPTION_FIELD:
                 if energy_delta_mj is None:
                     raise NoMetricValue("No energy data")
                 return MetricResult(
@@ -715,11 +719,11 @@ class TestComputeEfficiencyMetrics:
             for call in gpu.get_metric_result.call_args_list
         }
 
-        power_filter = filters_by_metric["gpu_power_usage"]
+        power_filter = filters_by_metric[NVIDIA_POWER_USAGE_FIELD]
         assert power_filter.start_ns == time_filter.start_ns
         assert power_filter.end_ns == time_filter.end_ns
 
-        energy_filter = filters_by_metric["energy_consumption"]
+        energy_filter = filters_by_metric[NVIDIA_ENERGY_CONSUMPTION_FIELD]
         assert energy_filter.start_ns == time_filter.start_ns
         assert energy_filter.end_ns == (
             time_filter.end_ns + Environment.GPU.FINAL_SCRAPE_GRACE_NS
@@ -756,7 +760,7 @@ class TestComputeEfficiencyMetrics:
         energy_filters = [
             call.kwargs["time_filter"]
             for call in gpu.get_metric_result.call_args_list
-            if call.args[0] == "energy_consumption"
+            if call.args[0] == NVIDIA_ENERGY_CONSUMPTION_FIELD
         ]
         assert len(energy_filters) == 2
 
@@ -773,3 +777,49 @@ class TestComputeEfficiencyMetrics:
             f"phase 2 start ({phase2.start_ns}); the grace window is too large "
             f"for safe multi-phase use"
         )
+
+    @pytest.mark.asyncio
+    async def test_efficiency_metrics_present_with_namespaced_telemetry_fields(
+        self,
+        accumulator: GPUTelemetryAccumulator,
+        time_filter: TimeRangeFilter,
+    ) -> None:
+        """Real namespaced (nvidia_*) telemetry must still yield all four totals.
+
+        Regression for the AIP-905 namespacing integration: telemetry is stored
+        under nvidia_power_usage / nvidia_energy_consumption, so the efficiency
+        accumulator must resolve those field names rather than the pre-namespace
+        gpu_power_usage / energy_consumption. Unlike the sibling tests, this one
+        drives compute_efficiency_metrics through real GpuTelemetryData (no
+        get_metric_result mock) so the field-name lookup is actually exercised.
+        """
+        for ts, energy_mj in (
+            (1_000_000_000, 0.0),  # baseline before window start
+            (3_000_000_000, 0.0005),
+            (4_000_000_000, 0.001),  # 0.001 MJ delta -> 1000 J
+        ):
+            await accumulator.process_telemetry_record(
+                make_telemetry_record(
+                    timestamp_ns=ts,
+                    nvidia_power_usage=200.0,
+                    nvidia_energy_consumption=energy_mj,
+                )
+            )
+
+        metric_results = [
+            MetricResult(
+                tag="total_output_tokens",
+                header="Total Output Tokens",
+                unit="tokens",
+                avg=2000.0,
+            )
+        ]
+
+        results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
+
+        assert {r.tag for r in results} == {
+            "total_gpu_power",
+            "total_gpu_energy",
+            "output_tokens_per_joule",
+            "energy_per_user",
+        }

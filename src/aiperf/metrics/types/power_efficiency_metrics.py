@@ -18,7 +18,7 @@ class TotalGpuPowerMetric(BaseDerivedMetric[float]):
     """Sum of average GPU power across all GPUs during the benchmark phase, in watts.
 
     Invariant: externally injected by
-    `GPUTelemetryAccumulator.compute_efficiency_metrics` from gpu_power_usage
+    `GPUTelemetryAccumulator.compute_efficiency_metrics` from nvidia_power_usage
     scrapes. `_derive_value` is intentionally non-functional;
     `MetricResultsProcessor.update_derived_metrics` is expected to catch
     NoMetricValue and skip the tag during its derivation walk.

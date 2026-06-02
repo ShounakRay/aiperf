@@ -30,6 +30,8 @@ from aiperf.common.protocols import PubClientProtocol
 from aiperf.exporters.utils import normalize_endpoint_display
 from aiperf.gpu_telemetry.constants import (
     GPU_TELEMETRY_COUNTER_METRICS,
+    NVIDIA_ENERGY_CONSUMPTION_FIELD,
+    NVIDIA_POWER_USAGE_FIELD,
     get_gpu_telemetry_metrics_config,
 )
 from aiperf.plugin.enums import UIType
@@ -320,7 +322,7 @@ class GPUTelemetryAccumulator(BaseMetricsProcessor):
         )
 
     def _sum_gpu_power_watts(self, time_filter: TimeRangeFilter) -> tuple[float, int]:
-        """Sum avg(gpu_power_usage) across all GPUs in the time range.
+        """Sum avg(nvidia_power_usage) across all GPUs in the time range.
 
         Returns:
             Tuple of (total_power_watts, gpu_count). GPUs missing power data
@@ -332,8 +334,8 @@ class GPUTelemetryAccumulator(BaseMetricsProcessor):
             for gpu_uuid, gpu_data in gpu_data_dict.items():
                 try:
                     result = gpu_data.get_metric_result(
-                        "gpu_power_usage",
-                        "gpu_power_usage",
+                        NVIDIA_POWER_USAGE_FIELD,
+                        NVIDIA_POWER_USAGE_FIELD,
                         "GPU Power Usage",
                         str(PowerMetricUnit.WATT),
                         time_filter=time_filter,
@@ -358,7 +360,7 @@ class GPUTelemetryAccumulator(BaseMetricsProcessor):
         return total_power_w, gpu_count
 
     def _sum_gpu_energy_joules(self, time_filter: TimeRangeFilter) -> tuple[float, int]:
-        """Sum energy_consumption deltas (converted to joules) across all GPUs.
+        """Sum nvidia_energy_consumption deltas (converted to joules) across all GPUs.
 
         Energy is a monotonic counter scraped on COLLECTION_INTERVAL cadence;
         the trailing scrape that closes the phase often lands a few hundred
@@ -380,8 +382,8 @@ class GPUTelemetryAccumulator(BaseMetricsProcessor):
             for gpu_uuid, gpu_data in gpu_data_dict.items():
                 try:
                     result = gpu_data.get_metric_result(
-                        "energy_consumption",
-                        "energy_consumption",
+                        NVIDIA_ENERGY_CONSUMPTION_FIELD,
+                        NVIDIA_ENERGY_CONSUMPTION_FIELD,
                         "Energy Consumption",
                         str(EnergyMetricUnit.MEGAJOULE),
                         time_filter=time_filter,
@@ -416,7 +418,7 @@ class GPUTelemetryAccumulator(BaseMetricsProcessor):
     ) -> list[MetricResult]:
         """Compute cross-boundary power efficiency totals for one profiling phase.
 
-        Aggregates avg(gpu_power_usage) and energy_consumption deltas across
+        Aggregates avg(nvidia_power_usage) and nvidia_energy_consumption deltas across
         all GPUs into 0-4 cross-GPU totals (W, J, tokens/J, J/user). Sync;
         called once per phase from `RecordsManager._summarize_with_logging`.
         Sibling `summarize()` above is async, periodic for the dashboard, and

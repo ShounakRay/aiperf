@@ -1739,12 +1739,12 @@ http_req_chunks_received = trace.response_chunks_count
 ## GPU Power Efficiency Metrics
 
 > [!NOTE]
-> All metrics in this section require `--gpu-telemetry` to be enabled and an NVIDIA collector (DCGM or pynvml) to expose the relevant signal (`nvidia_power_usage` and/or `nvidia_energy_consumption`; both collectors populate these identical fields). They are computed once per profiling phase by `GPUTelemetryAccumulator.compute_efficiency_metrics`, not by the standard derivation walk — see the [Externally-Injected Derived Metric pattern](dev/patterns.md#externally-injected-derived-metric-pattern).
+> All metrics in this section require `--gpu-telemetry` to be enabled and a GPU collector to expose the relevant signal. They are computed **per vendor**, once per profiling phase, by `GPUTelemetryAccumulator.compute_efficiency_metrics` — not by the standard derivation walk (see the [Externally-Injected Derived Metric pattern](dev/patterns.md#externally-injected-derived-metric-pattern)). Each metric exists in an NVIDIA variant (tag prefix `nvidia_`, from `nvidia_power_usage` / `nvidia_energy_consumption`, populated identically by the DCGM and pynvml collectors) and an AMD variant (tag prefix `amd_`, from `amd_power` / `amd_energy_consumption`, populated by the amdsmi collector). A mixed NVIDIA+AMD run reports both, each summing only its own vendor's GPUs.
 
 > [!NOTE]
-> These metrics render in their own vendor-attributed console section titled `GPU Power Efficiency (NVIDIA)` (`console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY`), separate from the main metrics table. When GPU telemetry is disabled the section is omitted entirely.
+> Each vendor's metrics render in their own vendor-attributed console section — `GPU Power Efficiency (NVIDIA)` (`console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY_NVIDIA`) and `GPU Power Efficiency (AMD)` (`MetricConsoleGroup.GPU_POWER_EFFICIENCY_AMD`) — separate from the main metrics table, and showing only the average (these are single aggregate values, not distributions). A section is omitted entirely when no GPU of that vendor reported.
 
-Each metric's header surfaces the number of GPUs that contributed valid data (e.g. `Total GPU Power (8 GPUs)`), so a partial-cohort run (where one or more GPUs failed to report) is distinguishable from a full run. Tags are emitted in this order when present: `total_gpu_power`, `total_gpu_energy`, `output_tokens_per_joule`, `energy_per_user`. Each tag is independently omitted when its underlying signal is unavailable.
+Each metric's header surfaces the number of GPUs that contributed valid data (e.g. `Total GPU Power (8 GPUs)`), so a partial-cohort run (where one or more GPUs failed to report) is distinguishable from a full run. Within each vendor, tags are emitted in this order when present: `<vendor>_total_gpu_power`, `<vendor>_total_gpu_energy`, `<vendor>_output_tokens_per_joule`, `<vendor>_energy_per_user` (e.g. `nvidia_total_gpu_power`, `amd_total_gpu_power`). Each tag is independently omitted when its underlying signal is unavailable.
 
 ### Total GPU Power
 
@@ -1923,7 +1923,8 @@ The `console_group` class attribute on a metric controls which console table the
 | <a id="group-prediction"></a>`MetricConsoleGroup.PREDICTION` | Speculative prediction token metrics (accepted/rejected). |
 | <a id="group-audio"></a>`MetricConsoleGroup.AUDIO` | Audio token metrics (prompt/completion). |
 | <a id="group-reasoning"></a>`MetricConsoleGroup.REASONING` | Reasoning token metrics. |
-| <a id="group-gpu-power-efficiency"></a>`MetricConsoleGroup.GPU_POWER_EFFICIENCY` | NVIDIA cross-GPU power efficiency totals (`total_gpu_power`, `total_gpu_energy`, `output_tokens_per_joule`, `energy_per_user`). Rendered in a dedicated, vendor-attributed `GPU Power Efficiency (NVIDIA)` section instead of the main table. |
+| <a id="group-gpu-power-efficiency-nvidia"></a>`MetricConsoleGroup.GPU_POWER_EFFICIENCY_NVIDIA` | NVIDIA cross-GPU power efficiency totals (`nvidia_total_gpu_power`, `nvidia_total_gpu_energy`, `nvidia_output_tokens_per_joule`, `nvidia_energy_per_user`). Rendered in a dedicated `GPU Power Efficiency (NVIDIA)` section instead of the main table. |
+| <a id="group-gpu-power-efficiency-amd"></a>`MetricConsoleGroup.GPU_POWER_EFFICIENCY_AMD` | AMD cross-GPU power efficiency totals (`amd_total_gpu_power`, `amd_total_gpu_energy`, `amd_output_tokens_per_joule`, `amd_energy_per_user`). Rendered in a dedicated `GPU Power Efficiency (AMD)` section instead of the main table. |
 
 Set as a class attribute on a `BaseMetric` subclass:
 

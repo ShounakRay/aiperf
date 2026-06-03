@@ -6,10 +6,14 @@ import pytest
 from aiperf.common.exceptions import NoMetricValue
 from aiperf.metrics.metric_dicts import MetricResultsDict
 from aiperf.metrics.types.power_efficiency_metrics import (
-    EnergyPerUserMetric,
-    OutputTokensPerJouleMetric,
-    TotalGpuEnergyMetric,
-    TotalGpuPowerMetric,
+    AmdEnergyPerUserMetric,
+    AmdOutputTokensPerJouleMetric,
+    AmdTotalGpuEnergyMetric,
+    AmdTotalGpuPowerMetric,
+    NvidiaEnergyPerUserMetric,
+    NvidiaOutputTokensPerJouleMetric,
+    NvidiaTotalGpuEnergyMetric,
+    NvidiaTotalGpuPowerMetric,
 )
 
 
@@ -29,10 +33,14 @@ class TestPowerEfficiencyDeriveValueContract:
     @pytest.mark.parametrize(
         "metric_class",
         [
-            TotalGpuPowerMetric,
-            TotalGpuEnergyMetric,
-            OutputTokensPerJouleMetric,
-            EnergyPerUserMetric,
+            NvidiaTotalGpuPowerMetric,
+            NvidiaTotalGpuEnergyMetric,
+            NvidiaOutputTokensPerJouleMetric,
+            NvidiaEnergyPerUserMetric,
+            AmdTotalGpuPowerMetric,
+            AmdTotalGpuEnergyMetric,
+            AmdOutputTokensPerJouleMetric,
+            AmdEnergyPerUserMetric,
         ],
         ids=lambda c: c.tag,
     )

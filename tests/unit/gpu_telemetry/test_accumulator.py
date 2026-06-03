@@ -418,6 +418,7 @@ class TestComputeEfficiencyMetrics:
             gpu_index=0,
             gpu_uuid="GPU-test-uuid-0000",
             gpu_model_name="Test GPU",
+            platform="nvidia",
         )
         gpu = Mock(spec=GpuTelemetryData)
         gpu.metadata = metadata
@@ -470,28 +471,28 @@ class TestComputeEfficiencyMetrics:
 
         tags = {r.tag for r in results}
         assert tags == {
-            "total_gpu_power",
-            "total_gpu_energy",
-            "output_tokens_per_joule",
-            "energy_per_user",
+            "nvidia_total_gpu_power",
+            "nvidia_total_gpu_energy",
+            "nvidia_output_tokens_per_joule",
+            "nvidia_energy_per_user",
         }
 
-        power = next(r for r in results if r.tag == "total_gpu_power")
+        power = next(r for r in results if r.tag == "nvidia_total_gpu_power")
         assert power.avg == pytest.approx(200.0)
         assert power.unit == str(PowerMetricUnit.WATT)
         assert power.header == "Total GPU Power (1 GPU)"
 
-        energy = next(r for r in results if r.tag == "total_gpu_energy")
+        energy = next(r for r in results if r.tag == "nvidia_total_gpu_energy")
         assert energy.avg == pytest.approx(1000.0)  # 0.001 MJ → J
         assert energy.unit == str(EnergyMetricUnit.JOULE)
         assert energy.header == "Total GPU Energy (1 GPU)"
 
-        tpj = next(r for r in results if r.tag == "output_tokens_per_joule")
+        tpj = next(r for r in results if r.tag == "nvidia_output_tokens_per_joule")
         assert tpj.avg == pytest.approx(2.0)  # 2000 tokens / 1000 J
         assert tpj.unit == str(GenericMetricUnit.TOKENS_PER_JOULE)
         assert tpj.header == "Output Tokens per Joule (1 GPU)"
 
-        epu = next(r for r in results if r.tag == "energy_per_user")
+        epu = next(r for r in results if r.tag == "nvidia_energy_per_user")
         assert epu.avg == pytest.approx(1000.0)  # 1000 J / 1 user (default)
         assert epu.unit == str(GenericMetricUnit.JOULES_PER_USER)
         assert epu.header == "Energy per User (1 GPU)"
@@ -508,7 +509,7 @@ class TestComputeEfficiencyMetrics:
 
         results = accumulator.compute_efficiency_metrics([], time_filter)
 
-        epu = next(r for r in results if r.tag == "energy_per_user")
+        epu = next(r for r in results if r.tag == "nvidia_energy_per_user")
         assert epu.avg == pytest.approx(125.0)  # 1000 J / 8 users
         assert epu.unit == str(GenericMetricUnit.JOULES_PER_USER)
         assert epu.header == "Energy per User (1 GPU)"
@@ -526,8 +527,8 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics([], time_filter)
 
         tags = {r.tag for r in results}
-        assert "energy_per_user" not in tags
-        assert "total_gpu_energy" in tags  # sibling still emits
+        assert "nvidia_energy_per_user" not in tags
+        assert "nvidia_total_gpu_energy" in tags  # sibling still emits
 
     def test_energy_per_user_omitted_when_no_energy_data(
         self, accumulator: GPUTelemetryAccumulator, time_filter: TimeRangeFilter
@@ -542,8 +543,8 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics([], time_filter)
 
         tags = {r.tag for r in results}
-        assert "energy_per_user" not in tags
-        assert "total_gpu_energy" not in tags
+        assert "nvidia_energy_per_user" not in tags
+        assert "nvidia_total_gpu_energy" not in tags
 
     def test_emitted_units_match_metric_class_units(
         self, accumulator: GPUTelemetryAccumulator, time_filter: TimeRangeFilter
@@ -554,10 +555,10 @@ class TestComputeEfficiencyMetrics:
         the unit enums would break this without needing per-test updates.
         """
         from aiperf.metrics.types.power_efficiency_metrics import (
-            EnergyPerUserMetric,
-            OutputTokensPerJouleMetric,
-            TotalGpuEnergyMetric,
-            TotalGpuPowerMetric,
+            NvidiaEnergyPerUserMetric,
+            NvidiaOutputTokensPerJouleMetric,
+            NvidiaTotalGpuEnergyMetric,
+            NvidiaTotalGpuPowerMetric,
         )
 
         gpu = self._make_gpu_mock(power_avg=200.0, energy_delta_mj=0.001)
@@ -574,10 +575,12 @@ class TestComputeEfficiencyMetrics:
         by_tag = {r.tag: r for r in results}
 
         expected = {
-            TotalGpuPowerMetric.tag: str(TotalGpuPowerMetric.unit),
-            TotalGpuEnergyMetric.tag: str(TotalGpuEnergyMetric.unit),
-            OutputTokensPerJouleMetric.tag: str(OutputTokensPerJouleMetric.unit),
-            EnergyPerUserMetric.tag: str(EnergyPerUserMetric.unit),
+            NvidiaTotalGpuPowerMetric.tag: str(NvidiaTotalGpuPowerMetric.unit),
+            NvidiaTotalGpuEnergyMetric.tag: str(NvidiaTotalGpuEnergyMetric.unit),
+            NvidiaOutputTokensPerJouleMetric.tag: str(
+                NvidiaOutputTokensPerJouleMetric.unit
+            ),
+            NvidiaEnergyPerUserMetric.tag: str(NvidiaEnergyPerUserMetric.unit),
         }
         for tag, expected_unit in expected.items():
             assert by_tag[tag].unit == expected_unit, (
@@ -600,9 +603,9 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
 
         tags = {r.tag for r in results}
-        assert "total_gpu_power" in tags
-        assert "total_gpu_energy" not in tags
-        assert "output_tokens_per_joule" not in tags
+        assert "nvidia_total_gpu_power" in tags
+        assert "nvidia_total_gpu_energy" not in tags
+        assert "nvidia_output_tokens_per_joule" not in tags
 
     def test_no_gpu_data_returns_empty_list(
         self, accumulator: GPUTelemetryAccumulator, time_filter: TimeRangeFilter
@@ -623,9 +626,9 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics([], time_filter)
 
         tags = {r.tag for r in results}
-        assert "total_gpu_power" in tags
-        assert "total_gpu_energy" in tags
-        assert "output_tokens_per_joule" not in tags
+        assert "nvidia_total_gpu_power" in tags
+        assert "nvidia_total_gpu_energy" in tags
+        assert "nvidia_output_tokens_per_joule" not in tags
 
     def test_multiple_gpus_sums_power_and_energy(
         self, accumulator: GPUTelemetryAccumulator, time_filter: TimeRangeFilter
@@ -642,21 +645,21 @@ class TestComputeEfficiencyMetrics:
 
         results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
 
-        power = next(r for r in results if r.tag == "total_gpu_power")
+        power = next(r for r in results if r.tag == "nvidia_total_gpu_power")
         assert power.avg == pytest.approx(250.0)  # 100 + 150
         assert power.count is None
         assert power.header == "Total GPU Power (2 GPUs)"
 
-        energy = next(r for r in results if r.tag == "total_gpu_energy")
+        energy = next(r for r in results if r.tag == "nvidia_total_gpu_energy")
         assert energy.avg == pytest.approx(1000.0)  # 500 + 500
         assert energy.count is None
         assert energy.header == "Total GPU Energy (2 GPUs)"
 
-        tpj = next(r for r in results if r.tag == "output_tokens_per_joule")
+        tpj = next(r for r in results if r.tag == "nvidia_output_tokens_per_joule")
         assert tpj.avg == pytest.approx(1.0)  # 1000 tokens / 1000 J
         assert tpj.header == "Output Tokens per Joule (2 GPUs)"
 
-        epu = next(r for r in results if r.tag == "energy_per_user")
+        epu = next(r for r in results if r.tag == "nvidia_energy_per_user")
         assert epu.avg == pytest.approx(1000.0)  # 1000 J / 1 user (default)
         assert epu.header == "Energy per User (2 GPUs)"
 
@@ -682,13 +685,13 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
         by_tag = {r.tag: r for r in results}
 
-        assert by_tag["total_gpu_power"].header == "Total GPU Power (2 GPUs)"
-        assert by_tag["total_gpu_energy"].header == "Total GPU Energy (1 GPU)"
-        assert by_tag["output_tokens_per_joule"].header == (
+        assert by_tag["nvidia_total_gpu_power"].header == "Total GPU Power (2 GPUs)"
+        assert by_tag["nvidia_total_gpu_energy"].header == "Total GPU Energy (1 GPU)"
+        assert by_tag["nvidia_output_tokens_per_joule"].header == (
             "Output Tokens per Joule (1 GPU)"
         )
         # energy_per_user inherits the energy-side count (its denominator).
-        assert by_tag["energy_per_user"].header == "Energy per User (1 GPU)"
+        assert by_tag["nvidia_energy_per_user"].header == "Energy per User (1 GPU)"
 
     def test_energy_filter_widens_end_ns_by_grace_while_power_filter_stays_bounded(
         self, accumulator: GPUTelemetryAccumulator, time_filter: TimeRangeFilter
@@ -818,8 +821,88 @@ class TestComputeEfficiencyMetrics:
         results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
 
         assert {r.tag for r in results} == {
-            "total_gpu_power",
-            "total_gpu_energy",
-            "output_tokens_per_joule",
-            "energy_per_user",
+            "nvidia_total_gpu_power",
+            "nvidia_total_gpu_energy",
+            "nvidia_output_tokens_per_joule",
+            "nvidia_energy_per_user",
         }
+
+    @pytest.mark.asyncio
+    async def test_efficiency_metrics_present_with_amd_telemetry(
+        self,
+        accumulator: GPUTelemetryAccumulator,
+        time_filter: TimeRangeFilter,
+    ) -> None:
+        """AMD telemetry (platform=amd, amd_*) yields the amd_* efficiency totals."""
+        for ts, energy_mj in (
+            (1_000_000_000, 0.0),
+            (3_000_000_000, 0.0005),
+            (4_000_000_000, 0.001),
+        ):
+            await accumulator.process_telemetry_record(
+                make_telemetry_record(
+                    timestamp_ns=ts,
+                    platform="amd",
+                    nvidia_power_usage=None,
+                    amd_power=200.0,
+                    amd_energy_consumption=energy_mj,
+                )
+            )
+
+        metric_results = [
+            MetricResult(
+                tag="total_output_tokens",
+                header="Total Output Tokens",
+                unit="tokens",
+                avg=2000.0,
+            )
+        ]
+
+        results = accumulator.compute_efficiency_metrics(metric_results, time_filter)
+
+        assert {r.tag for r in results} == {
+            "amd_total_gpu_power",
+            "amd_total_gpu_energy",
+            "amd_output_tokens_per_joule",
+            "amd_energy_per_user",
+        }
+
+    @pytest.mark.asyncio
+    async def test_mixed_vendor_emits_both_vendor_sections(
+        self,
+        accumulator: GPUTelemetryAccumulator,
+        time_filter: TimeRangeFilter,
+    ) -> None:
+        """A run with both NVIDIA and AMD GPUs emits both vendors' totals, each
+        summing only its own vendor's GPUs."""
+        for ts, energy_mj in (
+            (1_000_000_000, 0.0),
+            (3_000_000_000, 0.0005),
+            (4_000_000_000, 0.001),  # 1000 J delta
+        ):
+            await accumulator.process_telemetry_record(
+                make_telemetry_record(
+                    timestamp_ns=ts,
+                    gpu_uuid="GPU-nvidia-0",
+                    nvidia_power_usage=200.0,
+                    nvidia_energy_consumption=energy_mj,
+                )
+            )
+            await accumulator.process_telemetry_record(
+                make_telemetry_record(
+                    timestamp_ns=ts,
+                    gpu_uuid="GPU-amd-0",
+                    platform="amd",
+                    nvidia_power_usage=None,
+                    amd_power=300.0,
+                    amd_energy_consumption=energy_mj * 2,  # 2000 J delta
+                )
+            )
+
+        results = accumulator.compute_efficiency_metrics([], time_filter)
+        by_tag = {r.tag: r.avg for r in results}
+
+        assert by_tag["nvidia_total_gpu_power"] == pytest.approx(200.0)
+        assert by_tag["amd_total_gpu_power"] == pytest.approx(300.0)
+        assert by_tag["nvidia_total_gpu_energy"] == pytest.approx(1000.0)
+        assert by_tag["amd_total_gpu_energy"] == pytest.approx(2000.0)

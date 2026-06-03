@@ -1739,7 +1739,10 @@ http_req_chunks_received = trace.response_chunks_count
 ## GPU Power Efficiency Metrics
 
 > [!NOTE]
-> All metrics in this section require `--gpu-telemetry` to be enabled and the underlying collector (DCGM, pynvml, or amdsmi) to expose the relevant signal (`gpu_power_usage` and/or `energy_consumption`). They are computed once per profiling phase by `GPUTelemetryAccumulator.compute_efficiency_metrics`, not by the standard derivation walk — see the [Externally-Injected Derived Metric pattern](dev/patterns.md#externally-injected-derived-metric-pattern).
+> All metrics in this section require `--gpu-telemetry` to be enabled and an NVIDIA collector (DCGM or pynvml) to expose the relevant signal (`nvidia_power_usage` and/or `nvidia_energy_consumption`; both collectors populate these identical fields). They are computed once per profiling phase by `GPUTelemetryAccumulator.compute_efficiency_metrics`, not by the standard derivation walk — see the [Externally-Injected Derived Metric pattern](dev/patterns.md#externally-injected-derived-metric-pattern).
+
+> [!NOTE]
+> These metrics render in their own vendor-attributed console section titled `GPU Power Efficiency (NVIDIA)` (`console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY`), separate from the main metrics table. When GPU telemetry is disabled the section is omitted entirely.
 
 Each metric's header surfaces the number of GPUs that contributed valid data (e.g. `Total GPU Power (8 GPUs)`), so a partial-cohort run (where one or more GPUs failed to report) is distinguishable from a full run. Tags are emitted in this order when present: `total_gpu_power`, `total_gpu_energy`, `output_tokens_per_joule`, `energy_per_user`. Each tag is independently omitted when its underlying signal is unavailable.
 
@@ -1920,6 +1923,7 @@ The `console_group` class attribute on a metric controls which console table the
 | <a id="group-prediction"></a>`MetricConsoleGroup.PREDICTION` | Speculative prediction token metrics (accepted/rejected). |
 | <a id="group-audio"></a>`MetricConsoleGroup.AUDIO` | Audio token metrics (prompt/completion). |
 | <a id="group-reasoning"></a>`MetricConsoleGroup.REASONING` | Reasoning token metrics. |
+| <a id="group-gpu-power-efficiency"></a>`MetricConsoleGroup.GPU_POWER_EFFICIENCY` | NVIDIA cross-GPU power efficiency totals (`total_gpu_power`, `total_gpu_energy`, `output_tokens_per_joule`, `energy_per_user`). Rendered in a dedicated, vendor-attributed `GPU Power Efficiency (NVIDIA)` section instead of the main table. |
 
 Set as a class attribute on a `BaseMetric` subclass:
 

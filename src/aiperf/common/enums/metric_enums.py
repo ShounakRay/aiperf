@@ -668,6 +668,11 @@ class MetricConsoleGroup(CaseInsensitiveStrEnum):
     REASONING = "reasoning"
     """Reasoning token metrics."""
 
+    GPU_POWER_EFFICIENCY = "gpu_power_efficiency"
+    """NVIDIA-sourced cross-GPU power efficiency totals (power, energy, tokens/J,
+    energy/user). Rendered in their own vendor-attributed console section rather
+    than the main metrics table."""
+
 
 class MetricFlags(Flag):
     """Defines the possible flags for metrics that are used to determine how they are processed or grouped.

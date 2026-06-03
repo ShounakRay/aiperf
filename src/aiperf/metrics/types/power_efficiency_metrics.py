@@ -6,6 +6,7 @@ from typing import NoReturn
 from aiperf.common.enums import (
     EnergyMetricUnit,
     GenericMetricUnit,
+    MetricConsoleGroup,
     MetricFlags,
     PowerMetricUnit,
 )
@@ -29,6 +30,7 @@ class TotalGpuPowerMetric(BaseDerivedMetric[float]):
     unit = PowerMetricUnit.WATT
     display_order = 900
     flags = MetricFlags.NONE
+    console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY
 
     def _derive_value(self, metric_results: MetricResultsDict) -> NoReturn:
         raise NoMetricValue(
@@ -56,6 +58,7 @@ class TotalGpuEnergyMetric(BaseDerivedMetric[float]):
     unit = EnergyMetricUnit.JOULE
     display_order = 901
     flags = MetricFlags.NONE
+    console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY
 
     def _derive_value(self, metric_results: MetricResultsDict) -> NoReturn:
         raise NoMetricValue(
@@ -83,6 +86,7 @@ class OutputTokensPerJouleMetric(BaseDerivedMetric[float]):
     unit = GenericMetricUnit.TOKENS_PER_JOULE
     display_order = 902
     flags = MetricFlags.LARGER_IS_BETTER | MetricFlags.PRODUCES_TOKENS_ONLY
+    console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY
 
     def _derive_value(self, metric_results: MetricResultsDict) -> NoReturn:
         raise NoMetricValue(
@@ -111,6 +115,7 @@ class EnergyPerUserMetric(BaseDerivedMetric[float]):
     unit = GenericMetricUnit.JOULES_PER_USER
     display_order = 903
     flags = MetricFlags.NONE
+    console_group = MetricConsoleGroup.GPU_POWER_EFFICIENCY
 
     def _derive_value(self, metric_results: MetricResultsDict) -> NoReturn:
         raise NoMetricValue(

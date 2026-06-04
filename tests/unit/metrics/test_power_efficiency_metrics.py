@@ -20,14 +20,14 @@ from aiperf.metrics.types.power_efficiency_metrics import (
 class TestPowerEfficiencyDeriveValueContract:
     """Pin the `_derive_value` invariant for externally-injected derived metrics.
 
-    The three power-efficiency classes inherit `BaseDerivedMetric` for registry
-    integration but their values are produced by
+    The eight power-efficiency classes (four metrics x NVIDIA/AMD) inherit
+    `BaseDerivedMetric` for registry integration but their values are produced by
     `GPUTelemetryAccumulator.compute_efficiency_metrics`, not by the derivation
     walk in `MetricResultsProcessor.update_derived_metrics`. Calling
     `_derive_value` directly must raise `NoMetricValue` with a message that
-    names the tag, the operation, and the injection site — so a future
-    contributor copy-pasting this as the "derived metric pattern" sees the
-    contract spelled out rather than a silent miscalculation.
+    names the tag, the operation, the injection site, and the catching path — so
+    a future contributor copy-pasting this as the "derived metric pattern" sees
+    the contract spelled out rather than a silent miscalculation.
     """
 
     @pytest.mark.parametrize(
@@ -59,4 +59,10 @@ class TestPowerEfficiencyDeriveValueContract:
         assert "compute_efficiency_metrics" in msg, (
             "error message must point to the actual injection site so a future "
             "contributor doesn't copy this as the derived-metric pattern"
+        )
+        assert "update_derived_metrics" in msg, (
+            "error message must name the catching path "
+            "(MetricResultsProcessor.update_derived_metrics) that is expected to "
+            "swallow this NoMetricValue, since the docstring pins it as part of "
+            "the contract"
         )

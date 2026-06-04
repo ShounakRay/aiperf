@@ -151,11 +151,16 @@ class GPUTelemetryAccumulatorProtocol(GPUTelemetryProcessorProtocol, Protocol):
             time_filter: Time range covering the profiling phase.
 
         Returns:
-            Up to three MetricResult objects covering total GPU power, total
-            GPU energy, and output tokens per joule. Each metric is
-            independently omitted when its underlying GPU signal is
-            unavailable; returns an empty list when no GPU has any of the
-            relevant signals.
+            Cross-GPU efficiency totals computed per vendor. For each GPU vendor
+            present (NVIDIA, AMD), up to four MetricResult objects are emitted
+            under vendor-prefixed tags: ``<vendor>_total_gpu_power``,
+            ``<vendor>_total_gpu_energy``, ``<vendor>_output_tokens_per_joule``,
+            and ``<vendor>_energy_per_user`` (e.g. ``nvidia_total_gpu_power``,
+            ``amd_total_gpu_power``). Each metric is independently omitted when
+            its underlying signal is unavailable, and a vendor contributes
+            nothing when no GPU of that platform reported — so the result holds
+            0-8 objects. A mixed NVIDIA+AMD run yields both vendors' sets;
+            returns an empty list when no GPU has any relevant signal.
         """
         ...
 

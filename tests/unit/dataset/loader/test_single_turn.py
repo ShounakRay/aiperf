@@ -1009,6 +1009,20 @@ class TestSingleTurnImageUUIDs:
                 uuids=["only-one"],
             )
 
+    def test_image_uuids_empty_string_rejected_on_single_turn(self):
+        """Empty string in image_uuids is rejected at JSONL parse time."""
+        with pytest.raises(ValueError, match="must not contain empty strings"):
+            SingleTurn(
+                images=["https://example.com/a.png", "https://example.com/b.png"],
+                image_uuids=["uuid-a", ""],
+                text="describe",
+            )
+
+    def test_image_model_rejects_empty_string_uuid(self):
+        """Empty string in Image.uuids is rejected at model construction."""
+        with pytest.raises(ValueError, match="must not contain empty strings"):
+            Image(name="img", contents=["a.png"], uuids=[""])
+
     def test_load_time_dedup_in_strip_mode(self, create_jsonl_file):
         """When `uuid_and_strip` is set, `convert_to_conversations` drops bytes
         for second-and-later occurrences of each UUID within one conversation.

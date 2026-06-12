@@ -114,6 +114,11 @@ class Image(Media):
                 f"Image.uuids length ({len(self.uuids)}) must match "
                 f"contents length ({len(self.contents)}) when set."
             )
+        if any(u == "" for u in self.uuids):
+            raise ValueError(
+                "Image.uuids must not contain empty strings; "
+                "omit the uuid entry or remove it from the list."
+            )
         return self
 
 

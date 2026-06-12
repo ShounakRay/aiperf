@@ -145,6 +145,11 @@ class SingleTurn(AIPerfBaseModel):
                 f"image_uuids length ({len(self.image_uuids)}) must match "
                 f"images length ({len(self.images)})"
             )
+        if any(u == "" for u in self.image_uuids):
+            raise ValueError(
+                "image_uuids must not contain empty strings; "
+                "omit the uuid entry or remove it from the list."
+            )
         return self
 
     @model_validator(mode="after")

@@ -218,7 +218,9 @@ class ModelEndpointInfo(AIPerfBaseModel):
                 collect_trace_chunks=False,
                 template=getattr(ep, "template", None),
                 session_header=getattr(ep, "session_header", None),
-                uuid_and_strip=getattr(ep, "uuid_and_strip", EndpointDefaults.UUID_AND_STRIP),
+                uuid_and_strip=getattr(
+                    ep, "uuid_and_strip", EndpointDefaults.UUID_AND_STRIP
+                ),
             ),
             transport=ep.transport,
         )

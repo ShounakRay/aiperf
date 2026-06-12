@@ -8,10 +8,10 @@ import pytest
 
 from aiperf.common.enums import ConversationContextMode
 from aiperf.common.models import Image, Text
+from aiperf.config.flags.cli_config import CLIConfig
 from aiperf.dataset.loader.models import SingleTurn
 from aiperf.dataset.loader.single_turn import SingleTurnDatasetLoader
 from aiperf.plugin.enums import CustomDatasetType
-from aiperf.config.flags.cli_config import CLIConfig
 from tests.unit.conftest import make_run_from_cli
 
 
@@ -935,9 +935,7 @@ def test_single_turn_loader_propagates_extra_to_turn(tmp_path, default_cfg):
         )
         + "\n"
     )
-    loader = SingleTurnDatasetLoader(
-        filename=path, run=make_run_from_cli(default_cfg)
-    )
+    loader = SingleTurnDatasetLoader(filename=path, run=make_run_from_cli(default_cfg))
     conversations = loader.convert_to_conversations(loader.load_dataset())
     turn = conversations[0].turns[0]
     assert turn.extra_body == {"vendor_a": 1, "vendor_b": "x"}
